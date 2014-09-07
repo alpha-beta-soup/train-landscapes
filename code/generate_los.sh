@@ -1,12 +1,17 @@
 #/bin/bash
 # Grass 6.4
 
-# Load shapefile into GRASS
-v.in.ogr dsn=roads.shp output=road -o
-
+LINE_SHP='./roads.shp'
+R_DEM='./nidemreproj.tiff'
 PTS_FILE="./road_points_coords.csv"
 DIST_PTS=25 # Ideally the resolution of the DEM
 MAX_VIS_DIST=30000 # Maximum distance visible
+
+# Load shapefile into GRASS
+v.in.ogr dsn=$LINE_SHP output=road -o
+
+# Load elevation raster into GRASS and set it as the computational region
+r.in.gdal --o input=$R_DEM output=dem --verbose
 
 # Sample points along line
 v.to.points -nvit in=roadsg out=roads_points dmax=$DIST_PTS --o --q
