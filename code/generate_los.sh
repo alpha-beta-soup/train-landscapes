@@ -4,8 +4,8 @@
 LINE_SHP='../data/roads_test.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
-DIST_PTS=10000 # Ideally the resolution of the DEM
-MAX_VIS_DIST=100 # Maximum distance visible
+DIST_PTS=25 # Ideally the resolution of the DEM
+MAX_VIS_DIST=30000 # Maximum distance visible
 ELEV=2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
 
 # Load shapefile into GRASS
@@ -16,7 +16,8 @@ v.in.ogr dsn=$LINE_SHP output=road -o --verbose
 g.region -pm rast=dem --verbose
 
 # Sample points along line
-v.to.points in=road out=roads_points dmax=$DIST_PTS --o --q
+#v.to.points in=road out=roads_points dmax=$DIST_PTS --o --q
+v.segment
 
 # Put point coordinates in text file
 v.out.ascii -r in=roads_points fs=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
@@ -47,15 +48,15 @@ echo "\n"
 # Combine results in a single map 
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
-r.series in=`g.mlist --q type=rast pat=tmp_los_* sep=,` out=total_los method=sum --o --v
+r.series in=`g.mlist --q type=rast pat=tmp_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
-v.to.rast in=road out=road use=val val=1 --o --v
-r.grow.distance -m input=road distance=dist_from_road --o --v
+v.to.rast in=road out=road use=val val=1 --o --q
+r.grow.distance -m input=road distance=dist_from_road --o --q
 
 # Use distance to road instead of viewing angle in the
 # viewshed result map 
-r.mapcalc "dist_los = if(total_los, dist_from_road, null())" --o --v
+r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 g.mremove -f "tmp_los_*" --v

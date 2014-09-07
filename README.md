@@ -13,7 +13,9 @@ Secondly, obtain a line vector feature (a shapefile's good). Edit the variable `
 1. In a terminal: `$ grass64`
 2. (Set up your GRASS workspace)
 3. Execute `$ sh generate_los.sh`
-4. Examine your result.
+4. Examine your result
+5. ????
+6. Profit
 
 Note that for a very long and/or detailed line feature and/or a high-resolution DEM and/or a large `DIST_PTS` variable and/or a large `MAX_VIS_DIST` the procedure can take several hours to complete. You might like to test with non-default values first.
 
@@ -25,6 +27,6 @@ Assumes [GRASS 6.4](http://grass.osgeo.org/); see original repo (by [@pierreroud
 Inspired by
 -----------
 
-A long beautiful [train journey](http://www.kiwirailscenic.co.nz/northern-explorer/) in New Zealand, the economics of choosing a train over driving, and this [blog post](http://datagistips.blogspot.co.nz/2011/09/on-road-with-r-grass-intervisibility.html) on doing the same thing with R/GRASS.
+A long, beautiful [train journey](http://www.kiwirailscenic.co.nz/northern-explorer/) in New Zealand, the economics of choosing a train over driving, and this [blog post](http://datagistips.blogspot.co.nz/2011/09/on-road-with-r-grass-intervisibility.html) on doing the same thing with R/GRASS.
 
 ![Tranz Scenic's Northern Explorer, with the volcanic zone in the background](https://github.com/alpha-beta-soup/train-landscapes/blob/master/img.jpg)
