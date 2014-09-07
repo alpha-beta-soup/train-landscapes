@@ -1,5 +1,4 @@
-#/bin/bash
-# Grass 6.4
+#!/bin/bash
 
 LINE_SHP='../data/roads_test.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
@@ -16,8 +15,7 @@ v.in.ogr dsn=$LINE_SHP output=road -o --verbose
 g.region -pm rast=dem --verbose
 
 # Sample points along line
-#v.to.points in=road out=roads_points dmax=$DIST_PTS --o --q
-v.segment
+v.to.points -ivt in=road out=roads_points dmax=$DIST_PTS --o --q
 
 # Put point coordinates in text file
 v.out.ascii -r in=roads_points fs=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
@@ -27,7 +25,7 @@ NPTS=`cat $PTS_FILE | wc -l`
 # Solution using r.los (r.viewshed in GRASS 7.0)
 # ==============================================
 
-echo -ne "\nComputing viewsheds\n"
+echo -n "\nComputing viewsheds\n"
 
 COUNTER=0
 while read -r line
@@ -36,7 +34,22 @@ while read -r line
   PCT_FLOAT=$(echo "100*$((COUNTER+1))/$NPTS" | bc -l)
   PCT=`printf "%0.1f\n" $PCT_FLOAT` 
 
-  echo -n "Processing $NPTS viewshed instances: \t $PCT % \r" 
+  echo -ne "Processing $NPTS viewshed instances: \t $PCT % \r" 
+  
+  # Set the region to a smaller subset around the current observer point
+  # to speed processing
+  x=$(echo $line | cut -f1 -d,)
+  y=$(echo $line | cut -f2 -d,)
+  
+  #x=$(printf "%.8f" $x)
+  #y=$(printf "%.8f" $y)
+   
+  W=$(echo "$x-$MAX_VIS_DIST" | bc -l)
+  E=$(echo "$x+$MAX_VIS_DIST" | bc -l)
+  N=$(echo "$y+$MAX_VIS_DIST" | bc -l)
+  S=$(echo "$y-$MAX_VIS_DIST" | bc -l)
+  
+  g.region n=$N s=$S e=$E w=$W
   
   r.los input=dem output=tmp_los_${COUNTER} coordinate=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST --o
   COUNTER=$((COUNTER+1))
@@ -60,3 +73,5 @@ r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 g.mremove -f "tmp_los_*" --v
+
+
