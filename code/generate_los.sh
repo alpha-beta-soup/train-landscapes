@@ -11,8 +11,7 @@ ELEV=2 # Metres above the ground that the observer stands (note, try include the
 v.in.ogr dsn=$LINE_SHP output=road -o --verbose
 
 # Load elevation raster into GRASS and set it as the computational region
-#r.in.gdal --o input=$R_DEM output=dem --verbose
-g.region -pm rast=dem --verbose
+r.in.gdal --o input=$R_DEM output=dem --verbose
 
 # Sample points along line
 v.to.points -ivt in=road out=roads_points dmax=$DIST_PTS --o --q
@@ -40,9 +39,6 @@ while read -r line
   # to speed processing
   x=$(echo $line | cut -f1 -d,)
   y=$(echo $line | cut -f2 -d,)
-  
-  #x=$(printf "%.8f" $x)
-  #y=$(printf "%.8f" $y)
    
   W=$(echo "$x-$MAX_VIS_DIST" | bc -l)
   E=$(echo "$x+$MAX_VIS_DIST" | bc -l)
@@ -57,6 +53,9 @@ while read -r line
 done < $PTS_FILE
 
 echo "\n"
+
+# Set computational region to full extent
+g.region -pm rast=dem --verbose
 
 # Combine results in a single map 
 #   (aggregation method doesn't matter as we use
@@ -73,5 +72,3 @@ r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 g.mremove -f "tmp_los_*" --v
-
-
