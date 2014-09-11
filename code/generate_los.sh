@@ -1,17 +1,18 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads_test.shp' # Roads shapefile
+LINE_SHP='../data/roads.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=100000 # Ideally the resolution of the DEM
+DIST_PTS=25 # Ideally the resolution of the DEM
 MAX_VIS_DIST=30000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
 
 # r.los takes a long time, and the manual says to keep the number of rows and columns
 #   "under 1000". Here we adjust MAX_VIS_DIST by considering the resolution of
 #   the raster (R_RES), so that there is a maximum of 1000 rows and columns
-POS_VIS_DIST=$(echo "$R_RES * 1000 / 2" | bc -l) # The maximum possible vis dist to use and still have 1000 rows and cols
+#POS_VIS_DIST=$(echo "$R_RES * 1000 / 2" | bc -l) # The maximum possible vis dist to use and still have 1000 rows and cols
+POS_VIS_DIST=20000
 if [ 1 -eq `echo "$POS_VIS_DIST < $MAX_VIS_DIST" | bc` ]
 then
   MAX_VIS_DIST=$POS_VIS_DIST
@@ -65,23 +66,33 @@ while read -r line
   
 done < $PTS_FILE
 
-echo "\n"
-
 # Set computational region to full extent
 g.region -pm rast=dem --verbose
 
 # Combine results in a single map 
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
-r.series in=`g.mlist --q type=rast pat=tmp_los_* sep=,` out=total_los method=sum --o --q
+echo "\nCombining component viewsheds\n"
+# Loops because it can exceed hard limit of number of rasters that can be open at once (1024)
+for i in `seq 0 9`;
+do
+      r.series in=`g.mlist --q type=rast pat=tmp_los_*$i sep=,` out=total_los_$i method=sum --o --q
+done
+# Then combine the series 0-9 into the final LOS raster
+r.series in `g.mlist --q type=rast pat=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
+echo "\nDetermining distance from roads\n"
 v.to.rast in=road out=road use=val val=1 --o --q
 r.grow.distance -m input=road distance=dist_from_road --o --q
 
 # Use distance to road instead of viewing angle in the
-#   viewshed result map 
+#   viewshed result map
+echo "\nSubstituting viewing angle for distance to road\n"
 r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
+echo "\nDeleting temporary files\n"
 g.mremove -f "tmp_los_*" --q
+
+echo "\ngenerate_los.sh complete\n"
