@@ -76,7 +76,7 @@ echo "\nCombining component viewsheds\n"
 # Loops because it can exceed hard limit of number of rasters that can be open at once (1024)
 for i in `seq 0 9`;
 do
-      r.series in=`g.mlist --q type=rast pat=tmp_los_*$i sep=,` out=total_los_$i method=sum --o --q
+      r.series in=`g.mlist --q type=rast pat=tmp_los_$i* sep=,` out=total_los_$i method=sum --o --q
 done
 # Then combine the series 0-9 into the final LOS raster
 r.series in `g.mlist --q type=rast pat=total_los_* sep=,` out=total_los method=sum --o --q
