@@ -57,18 +57,29 @@ done < $PTS_FILE
 # Combine results in a single map 
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
+# Set computational region to full extent
+g.region -pm rast=dem --q
+
 echo "\nCombining component viewsheds\n"
-# Loops because it can exceed hard limit of number of rasters that can be open at once (1024)
+# Loops because otherwise can easily exceed default hard limit of number of
+#  rasters that can be open at once (1024)
 # r.series -z flag, new in grass70, "don't keep files open"
-for i in `seq 0 9`;
+for i in `seq 0 99`;
 do
-  # Set computational region to full extent
-  g.region -pm rast=dem --q
   # Combine a subset of all the viewsheds
   # * is a wildcard for zero or more characters
-  r.series -z input=`g.mlist --q type=rast pattern=tmp_los_*$i sep=,` out=total_los_$i method=sum --o --q
+  if [ $i -le 9 ] # If i <= 9
+  then # append a 0 to the start of $i
+    PATT=tmp_los_*0$i
+    OUT=total_los_0$i
+  else # don't modify the pattern of $i
+    PATT=tmp_los_*$i
+    OUT=total_los_$i
+  fi
+  r.series -z input=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
-# Then combine the series 0-9 into the final LOS raster
+
+# Then combine the series 00-99 into the final LOS raster
 g.region -pm rast=dem --q
 r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 

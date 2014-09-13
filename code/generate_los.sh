@@ -72,13 +72,23 @@ g.region -pm rast=dem --verbose
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
 echo "\nCombining component viewsheds\n"
-# Loops because it can exceed hard limit of number of rasters that can be open at once (1024)
-for i in `seq 0 9`;
+# Loops because otherwise can easily exceed default hard limit of number of
+#  rasters that can be open at once (1024)
+# r.series -z flag, new in grass70, "don't keep files open"
+for i in `seq 0 99`;
 do
-      r.series in=`g.mlist --q type=rast pat=tmp_los_$i* sep=,` out=total_los_$i method=sum --o --q
+  # Combine a subset of all the viewsheds
+  # * is a wildcard for zero or more characters
+  if [ $i -le 9 ] # If i <= 9
+  then # append a 0 to the start of $i
+    PATT=tmp_los_*0$i
+    OUT=total_los_0$i
+  else # don't modify the pattern of $i
+    PATT=tmp_los_*$i
+    OUT=total_los_$i
+  fi
+  r.series in=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
-# Then combine the series 0-9 into the final LOS raster
-r.series in `g.mlist --q type=rast pat=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
 echo "\nDetermining distance from roads\n"
