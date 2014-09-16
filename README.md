@@ -22,7 +22,7 @@ Note that for a very long and/or detailed line feature and/or a high-resolution 
 Requirements
 ------------
 
-`generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (not currently the stable release, use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
+`generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (not currently the stable release), use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
 
 Inspired by
 -----------
