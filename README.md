@@ -10,9 +10,9 @@ First, obtain a raster digital elevation model. Edit the variable `R_DEM` to poi
 
 Secondly, obtain a line vector feature (a shapefile's good). Edit the variable `LINE_SHP` to point to it. You may like to simplify the line or edit out the tunnels (where nothing is generally visible). The viewshed will be determined using a sample of points along this line as observer locations.
 
-1. In a terminal: `$ grass64`
-2. (Set up your GRASS workspace)
-3. Execute `$ sh generate_los.sh`
+1. In a terminal: `$ grass64` or `$ grass70` as per what version of GRASS GIS you are using. (GRASS 7.0 will be faster for this task.)
+2. Set up and/or connect to the GRASS workspace where your project data is available and will be stored.
+3. Execute `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version.
 4. Examine your result
 5. ????
 6. Profit
@@ -22,7 +22,7 @@ Note that for a very long and/or detailed line feature and/or a high-resolution 
 Requirements
 ------------
 
-Assumes [GRASS 6.4](http://grass.osgeo.org/); see original repo (by [@pierreroudier](https://github.com/pierreroudier)) for a GRASS 7.0 equivalent.
+`generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (not currently the stable release, use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
 
 Inspired by
 -----------
