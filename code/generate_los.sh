@@ -90,6 +90,10 @@ do
   r.series in=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
+# Then combine the series 00-99 into the final LOS raster
+g.region -pm rast=dem --q
+r.series in=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
+
 # Create distance to road map
 echo "\nDetermining distance from roads\n"
 v.to.rast in=road out=road use=val val=1 --o --q

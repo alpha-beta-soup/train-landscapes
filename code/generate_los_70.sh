@@ -1,12 +1,18 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads.shp' # Roads shapefile
+LINE_SHP='../data/roads_test.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
 DIST_PTS=25 # Maximum distance between observer points: ideally the resolution of the DEM
 MAX_VIS_DIST=30000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
+OUTFILE="dist_los" # Name of final output raster
+# Default north, south, etc. values, set with respect to the chosen projection
+mostNorth=0
+mostSouth=9999999
+mostEast=0
+mostWest=9999999
 
 # Load shapefile into GRASS
 v.in.ogr dsn=$LINE_SHP output=road --o --v
@@ -46,9 +52,18 @@ while read -r line
   S=$(echo "$y-$MAX_VIS_DIST" | bc -l)
   g.region n=$N s=$S e=$E w=$W --q
   
+  # Update mostNorth etc.
+  # We collect the most extreme values for the extent so we can combine
+  #   the component rasters later more efficiently (r.series will only be as big
+  #   as it needs to be, and no bigger, so probably smaller than the input raster
+  mostNorth=$(echo "$mostNorth>$N" | bc)
+  mostSouth=$(echo "$mostSouth<$S" | bc)
+  mostWest=$(echo "$mostWest<$W" | bc)
+  mostEast=$(echo "$mostEast>$E" | bc)
+  
   # Does not overwrite, so SIGINT (Ctrl+C) can be used to interrupt a
-  #  long-running process, to be resumed later
-  #  (keep parameters constant between runs)
+  #   long-running process, to be resumed later
+  #   (keep parameters constant between runs)
   r.viewshed -crb input=dem output=tmp_los_${COUNTER} coordinates=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST memory=2000 --o --q
   COUNTER=$((COUNTER+1))
   
@@ -57,8 +72,8 @@ done < $PTS_FILE
 # Combine results in a single map 
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
-# Set computational region to full extent
-g.region -pm rast=dem --q
+# Set computational region to largest neccessary extent
+g.region n=$mostNorth s=$mostSouth e=$mostEast w=$mostWest --q
 
 echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
@@ -80,19 +95,18 @@ do
 done
 
 # Then combine the series 00-99 into the final LOS raster
-g.region -pm rast=dem --q
 r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
 echo "\nDetermining distance from roads\n"
-g.region -pm rast=dem --q
 v.to.rast in=road out=road use=val val=1 --o --q
 r.grow.distance -m input=road distance=dist_from_road --o --q
 
 # Use distance to road instead of viewing angle in the
 #   viewshed result map
 echo "\nSubstituting viewing angle for distance to road\n"
-r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
+g.remove $OUTFILE
+r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 echo "\nDeleting temporary files\n"
