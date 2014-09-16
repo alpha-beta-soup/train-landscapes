@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads_test.shp' # Roads shapefile
+LINE_SHP='../data/roads.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
@@ -11,8 +11,8 @@ OUTFILE="dist_los" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
 mostNorth=0
 mostSouth=9999999
-mostEast=0
-mostWest=9999999
+mostEast=9999999
+mostWest=0
 
 # Load shapefile into GRASS
 v.in.ogr dsn=$LINE_SHP output=road --o --v
@@ -32,6 +32,26 @@ NPTS=`cat $PTS_FILE | wc -l`
 # ==============================================
 
 echo -n "\nComputing viewsheds\n"
+
+# Some functions to allow comparison of floating point numbers
+float_test() {
+    # Return status code of a comparison
+     echo | awk 'END { exit ( !( '"$1"')); }'
+}
+return_larger() {
+    # Return larger of two numbers (two float inputs)
+    float_test "$1 > $2" && larger=$1
+    float_test "$1 < $2" && larger=$2
+    float_test "$1 == $2" && larger=$1 # They're equal
+    echo $larger
+}
+return_smaller() {
+    # Return small of two numbers (two float inputs)
+    float_test "$1 > $2" && smaller=$2
+    float_test "$1 < $2" && smaller=$1
+    float_test "$1 == $2" && smaller=$1 # They're equal
+    echo $smaller
+}
 
 COUNTER=0
 while read -r line
@@ -55,16 +75,16 @@ while read -r line
   # Update mostNorth etc.
   # We collect the most extreme values for the extent so we can combine
   #   the component rasters later more efficiently (r.series will only be as big
-  #   as it needs to be, and no bigger, so probably smaller than the input raster
-  mostNorth=$(echo "$mostNorth>$N" | bc)
-  mostSouth=$(echo "$mostSouth<$S" | bc)
-  mostWest=$(echo "$mostWest<$W" | bc)
-  mostEast=$(echo "$mostEast>$E" | bc)
+  #   as it needs to be, and no bigger, so probably smaller than the input DEM)
+  mostNorth=$(return_larger $mostNorth $N)
+  mostSouth=$(return_smaller $mostSouth $S)
+  mostEast=$(return_smaller $mostEast $E)
+  mostWest=$(return_larger $mostWest $W)
   
   # Does not overwrite, so SIGINT (Ctrl+C) can be used to interrupt a
   #   long-running process, to be resumed later
   #   (keep parameters constant between runs)
-  r.viewshed -crb input=dem output=tmp_los_${COUNTER} coordinates=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST memory=2000 --o --q
+  r.viewshed -crb input=dem output=tmp_los_${COUNTER} coordinates=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST memory=2000 --q
   COUNTER=$((COUNTER+1))
   
 done < $PTS_FILE
@@ -73,7 +93,7 @@ done < $PTS_FILE
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
 # Set computational region to largest neccessary extent
-g.region n=$mostNorth s=$mostSouth e=$mostEast w=$mostWest --q
+g.region -m n=$mostNorth s=$mostSouth e=$mostEast w=$mostWest --q
 
 echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
