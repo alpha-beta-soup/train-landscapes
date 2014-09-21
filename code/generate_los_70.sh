@@ -1,18 +1,18 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads.shp' # Roads shapefile
+LINE_SHP='../data/roads_test2.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=25 # Maximum distance between observer points: ideally the resolution of the DEM
-MAX_VIS_DIST=30000 # Maximum distance visible
+DIST_PTS=2000 # Maximum distance between observer points: ideally the resolution of the DEM
+MAX_VIS_DIST=2000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
 OUTFILE="dist_los" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
 mostNorth=0
 mostSouth=9999999
-mostEast=9999999
-mostWest=0
+mostEast=0
+mostWest=9999999
 
 # Load shapefile into GRASS
 v.in.ogr dsn=$LINE_SHP output=road --o --v
@@ -78,8 +78,8 @@ while read -r line
   #   as it needs to be, and no bigger, so probably smaller than the input DEM)
   mostNorth=$(return_larger $mostNorth $N)
   mostSouth=$(return_smaller $mostSouth $S)
-  mostEast=$(return_smaller $mostEast $E)
-  mostWest=$(return_larger $mostWest $W)
+  mostEast=$(return_larger $mostEast $E)
+  mostWest=$(return_smaller $mostWest $W)
   
   # Does not overwrite, so SIGINT (Ctrl+C) can be used to interrupt a
   #   long-running process, to be resumed later
@@ -95,6 +95,11 @@ done < $PTS_FILE
 # Set computational region to largest neccessary extent
 g.region -m n=$mostNorth s=$mostSouth e=$mostEast w=$mostWest --q
 
+echo $mostNorth
+echo $mostSouth
+echo $mostEast
+echo $mostWest
+
 echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
 #  rasters that can be open at once (1024)
@@ -106,16 +111,16 @@ do
   if [ $i -le 9 ] # If i <= 9
   then # append a 0 to the start of $i
     PATT=tmp_los_*0$i
-    OUT=total_los_0$i
+    OUT=test_total_los_0$i
   else # don't modify the pattern of $i
     PATT=tmp_los_*$i
-    OUT=total_los_$i
+    OUT=test_total_los_$i
   fi
   r.series -z input=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
 # Then combine the series 00-99 into the final LOS raster
-r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
+r.series -z input=`g.mlist --q type=rast pattern=test_total_los_* sep=,` out=test_total_los method=sum --o --q
 
 # Create distance to road map
 echo "\nDetermining distance from roads\n"
@@ -126,7 +131,7 @@ r.grow.distance -m input=road distance=dist_from_road --o --q
 #   viewshed result map
 echo "\nSubstituting viewing angle for distance to road\n"
 g.remove $OUTFILE
-r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
+r.mapcalc "$OUTFILE = if(test_total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 echo "\nDeleting temporary files\n"
