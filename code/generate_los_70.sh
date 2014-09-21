@@ -1,13 +1,13 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads_test2.shp' # Roads shapefile
+LINE_SHP='../data/roads.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
 DIST_PTS=2000 # Maximum distance between observer points: ideally the resolution of the DEM
 MAX_VIS_DIST=2000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
-OUTFILE="dist_los" # Name of final output raster
+OUTFILE="dist_los_car" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
 mostNorth=0
 mostSouth=9999999
@@ -111,16 +111,16 @@ do
   if [ $i -le 9 ] # If i <= 9
   then # append a 0 to the start of $i
     PATT=tmp_los_*0$i
-    OUT=test_total_los_0$i
+    OUT=total_los_0$i
   else # don't modify the pattern of $i
     PATT=tmp_los_*$i
-    OUT=test_total_los_$i
+    OUT=total_los_$i
   fi
   r.series -z input=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
 # Then combine the series 00-99 into the final LOS raster
-r.series -z input=`g.mlist --q type=rast pattern=test_total_los_* sep=,` out=test_total_los method=sum --o --q
+r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
 echo "\nDetermining distance from roads\n"
@@ -131,7 +131,7 @@ r.grow.distance -m input=road distance=dist_from_road --o --q
 #   viewshed result map
 echo "\nSubstituting viewing angle for distance to road\n"
 g.remove $OUTFILE
-r.mapcalc "$OUTFILE = if(test_total_los, dist_from_road, null())"
+r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
 echo "\nDeleting temporary files\n"
