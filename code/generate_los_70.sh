@@ -4,8 +4,8 @@ LINE_SHP='../data/roads.shp' # Roads shapefile
 R_DEM='../data/nidemreproj' # Elevation DEM
 PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=2000 # Maximum distance between observer points: ideally the resolution of the DEM
-MAX_VIS_DIST=2000 # Maximum distance visible
+DIST_PTS=25 # Maximum distance between observer points: ideally the resolution of the DEM
+MAX_VIS_DIST=30000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
 OUTFILE="dist_los_car" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
@@ -104,7 +104,11 @@ echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
 #  rasters that can be open at once (1024)
 # r.series -z flag, new in grass70, "don't keep files open"
-for i in `seq 0 99`;
+
+# TODO won't this ignore tmp_los_1 >> tmp_los_9?
+
+##for i in `seq 0 99`;
+for i in `seq 66 99`;
 do
   # Combine a subset of all the viewsheds
   # * is a wildcard for zero or more characters
@@ -116,10 +120,12 @@ do
     PATT=tmp_los_*$i
     OUT=total_los_$i
   fi
+  echo "\nComponent r.series: r.series -z input=g.mlist --q type=rast pattern=$PATT sep=, out=$OUT method=sum --o --q\n"
   r.series -z input=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
 # Then combine the series 00-99 into the final LOS raster
+echo "\nFinal r.series: r.series -z input=g.mlist --q type=rast pattern=total_los_* sep=, out=total_los method=sum --o --q\n"
 r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
@@ -133,7 +139,7 @@ echo "\nSubstituting viewing angle for distance to road\n"
 g.remove $OUTFILE
 r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
 
-# Clean up, removing the component visibility rasters
+# Clean up, removing the component visibility rasters, only after outputs have been written
 echo "\nDeleting temporary files\n"
 g.mremove -f type=rast pattern="tmp_los_*" --q
 
