@@ -8,10 +8,6 @@ L.tileLayer('http://{s}.tiles.mapbox.com/v3/alpha-beta-soup.jhokb32m/{z}/{x}/{y}
                         
 var carViewshed = '/tiles/Mapnik/{z}/{x}/{y}.png'
 
-var img = new Image();
-img.src = '/tiles/Mapnik/3/7/2.png';
-img.onload = alert(img.height + ' x ' + img.width)
-
 L.tileLayer(carViewshed, {
   attribution: 'Richard Law',
   maxZoom: 15,
