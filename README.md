@@ -29,4 +29,4 @@ Inspired by
 
 A long, beautiful [train journey](http://www.kiwirailscenic.co.nz/northern-explorer/) in New Zealand, the economics of choosing a train over driving, and this [blog post](http://datagistips.blogspot.co.nz/2011/09/on-road-with-r-grass-intervisibility.html) on doing the same thing with R/GRASS.
 
-![Tranz Scenic's Northern Explorer, with the volcanic zone in the background](https://github.com/alpha-beta-soup/train-landscapes/blob/master/blog/img.jpg)
+![Tranz Scenic's Northern Explorer, with the volcanic zone in the background](https://github.com/alpha-beta-soup/train-landscapes/blob/Web-ify/blog/img.jpg)
