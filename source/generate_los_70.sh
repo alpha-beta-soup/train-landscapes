@@ -1,10 +1,47 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads.shp' # Roads shapefile
-R_DEM='../data/nidemreproj' # Elevation DEM
-PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
+usage() {
+   cat << EOF
+Usage: test.sh [-train | -road]
+
+-train    perform the viewshed analysis for the train journey
+-road     perform the viewshed analysis for the road journey
+EOF
+   exit 1
+}
+
+# References to "road" are made throughout, especially for intermediate output
+# I just haven't used a more general term :)
+
+# Number of arguments
+# If there is more or less than one, do usage()
+if [ $# -ne 1 ]; then
+   usage;
+fi
+
+if [ "$1" != "-train" ] && [ "$1" != "-road" ]; then
+  usage;
+fi
+
+if [ $1 = "-road" ]
+then
+    LINE_SHP='../data/road/roads.shp' # Roads shapefile
+    PTS_FILE="../data/road/road_points_coords.csv"
+    # An intermediate output of this script; coordinates of LINE_SHP
+elif [ $1 = "-train" ]
+then
+    # We live in a post-shapefile world, baby!
+    LINE_SHP='../data/train/nz-railway-centrelines-topo-150k.gpkg' # Rail geopackage
+    PTS_FILE="../data/train/rail_points_coords.csv"
+    # An intermediate output of this script; coordinates of LINE_SHP
+else
+    usage; # shouldn't need this
+fi
+echo $LINE_SHP
+
+R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=25 # Maximum distance between observer points: ideally the resolution of the DEM
+DIST_PTS=250000 # Ideally the resolution of the DEM
 MAX_VIS_DIST=30000 # Maximum distance visible
 ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
 OUTFILE="dist_los_car" # Name of final output raster
@@ -105,10 +142,7 @@ echo "\nCombining component viewsheds\n"
 #  rasters that can be open at once (1024)
 # r.series -z flag, new in grass70, "don't keep files open"
 
-# TODO won't this ignore tmp_los_1 >> tmp_los_9?
-
-##for i in `seq 0 99`;
-for i in `seq 66 99`;
+for i in `seq 0 99`;
 do
   # Combine a subset of all the viewsheds
   # * is a wildcard for zero or more characters
@@ -129,13 +163,13 @@ echo "\nFinal r.series: r.series -z input=g.mlist --q type=rast pattern=total_lo
 r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
-echo "\nDetermining distance from roads\n"
+echo "\nDetermining distance from features\n"
 v.to.rast in=road out=road use=val val=1 --o --q
 r.grow.distance -m input=road distance=dist_from_road --o --q
 
 # Use distance to road instead of viewing angle in the
 #   viewshed result map
-echo "\nSubstituting viewing angle for distance to road\n"
+echo "\nSubstituting viewing angle for distance to features\n"
 g.remove $OUTFILE
 r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
 

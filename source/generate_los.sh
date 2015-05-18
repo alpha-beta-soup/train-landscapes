@@ -1,8 +1,46 @@
 #!/bin/bash
 
-LINE_SHP='../data/roads.shp' # Roads shapefile
-R_DEM='../data/nidemreproj' # Elevation DEM
-PTS_FILE="../data/road_points_coords.csv" # An intermediate output of this script; coordinates of LINE_SHP
+usage() {
+   cat << EOF
+Usage: test.sh [-train | -road]
+
+-train    perform the viewshed analysis for the train journey
+-road     perform the viewshed analysis for the road journey
+EOF
+   exit 1
+}
+
+# References to "road" are made throughout, especially for intermediate output
+# I just haven't used a more general term :)
+
+# Number of arguments
+# If there is more or less than one, do usage()
+if [ $# -ne 1 ]; then
+   usage;
+fi
+
+if [ "$1" != "-train" ] && [ "$1" != "-road" ]; then
+  usage;
+fi
+
+if [ $1 = "-road" ]
+then
+    LINE_SHP='../data/road/roads.shp' # Roads shapefile
+    PTS_FILE="../data/road/road_points_coords.csv"
+    # An intermediate output of this script; coordinates of LINE_SHP
+elif [ $1 = "-train" ]
+then
+    # We live in a post-shapefile world, baby!
+    LINE_SHP='../data/train/nz-railway-centrelines-topo-150k.gpkg' # Rail geopackage
+    PTS_FILE="../data/train/rail_points_coords.csv"
+    # An intermediate output of this script; coordinates of LINE_SHP
+else
+    usage; # shouldn't need this
+fi
+echo $LINE_SHP
+
+
+R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
 DIST_PTS=25 # Ideally the resolution of the DEM
 MAX_VIS_DIST=30000 # Maximum distance visible
@@ -95,13 +133,13 @@ g.region -pm rast=dem --q
 r.series in=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
-echo "\nDetermining distance from roads\n"
+echo "\nDetermining distance from features\n"
 v.to.rast in=road out=road use=val val=1 --o --q
 r.grow.distance -m input=road distance=dist_from_road --o --q
 
 # Use distance to road instead of viewing angle in the
 #   viewshed result map
-echo "\nSubstituting viewing angle for distance to road\n"
+echo "\nSubstituting viewing angle for distance from features\n"
 r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
 
 # Clean up, removing the component visibility rasters
