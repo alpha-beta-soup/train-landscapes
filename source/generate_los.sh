@@ -37,8 +37,6 @@ then
 else
     usage; # shouldn't need this
 fi
-echo $LINE_SHP
-
 
 R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)

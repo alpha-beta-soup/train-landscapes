@@ -27,23 +27,26 @@ if [ $1 = "-road" ]
 then
     LINE_SHP='../data/road/roads.shp' # Roads shapefile
     PTS_FILE="../data/road/road_points_coords.csv"
-    # An intermediate output of this script; coordinates of LINE_SHP
+    # ^ An intermediate output of this script; coordinates of LINE_SHP
+    ELEV=1.2 # Metres above the ground that the observer stands
+    # ^ just a guess (note, try include the vehicle, too)
 elif [ $1 = "-train" ]
 then
     # We live in a post-shapefile world, baby!
     LINE_SHP='../data/train/nz-railway-centrelines-topo-150k.gpkg' # Rail geopackage
     PTS_FILE="../data/train/rail_points_coords.csv"
-    # An intermediate output of this script; coordinates of LINE_SHP
+    # ^ An intermediate output of this script; coordinates of LINE_SHP
+    ELEV=2.5 # Metres above the ground that the observer stands
+    # ^ just a guess (note, try include the vehicle, too)
 else
     usage; # shouldn't need this
 fi
-echo $LINE_SHP
 
 R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
 DIST_PTS=250000 # Ideally the resolution of the DEM
-MAX_VIS_DIST=30000 # Maximum distance visible
-ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
+MAX_VIS_DIST=1000 # Maximum distance visible
+
 OUTFILE="dist_los_car" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
 mostNorth=0
@@ -154,13 +157,13 @@ do
     PATT=tmp_los_*$i
     OUT=total_los_$i
   fi
-  echo "\nComponent r.series: r.series -z input=g.mlist --q type=rast pattern=$PATT sep=, out=$OUT method=sum --o --q\n"
-  r.series -z input=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
+  echo "\nComponent r.series: r.series -z input=g.list --q type=rast pattern=$PATT sep=, out=$OUT method=sum --o --q\n"
+  r.series -z input=`g.list --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
 # Then combine the series 00-99 into the final LOS raster
-echo "\nFinal r.series: r.series -z input=g.mlist --q type=rast pattern=total_los_* sep=, out=total_los method=sum --o --q\n"
-r.series -z input=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
+echo "\nFinal r.series: r.series -z input=g.list --q type=rast pattern=total_los_* sep=, out=total_los method=sum --o --q\n"
+r.series -z input=`g.list --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
 # Create distance to road map
 echo "\nDetermining distance from features\n"
