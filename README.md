@@ -12,17 +12,19 @@ Secondly, obtain a line vector feature (a shapefile's good). Edit the variable `
 
 1. In a terminal: `$ grass64` or `$ grass70` as per what version of GRASS GIS you are using. (GRASS 7.0 will be faster for this task.)
 2. Set up and/or connect to the GRASS workspace where your project data is available and will be stored.
-3. Execute `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version.
-4. Examine your result
-5. ????
-6. Profit
+3. Type `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version, in the command line.
+4. Add an argument to this statement: either `-train` or `-road` depending on whether you want to run the intervisibility analysis for the road route, or the rail route.
+5. Execute your command, and wait (probably a very long time).
+6. Examine your result
+7. ????
+8. Profit
 
 Note that for a very long and/or detailed line feature and/or a high-resolution DEM and/or a large `DIST_PTS` variable and/or a large `MAX_VIS_DIST` the procedure can take several hours to complete. You might like to test with non-default values first.
 
 Requirements
 ------------
 
-`generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (not currently the stable release), use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
+`generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (currently not the stable release), use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
 
 Inspired by
 -----------
