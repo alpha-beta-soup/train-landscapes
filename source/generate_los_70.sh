@@ -10,9 +10,6 @@ EOF
    exit 1
 }
 
-# References to "road" are made throughout, especially for intermediate output
-# I just haven't used a more general term :)
-
 # Number of arguments
 # If there is more or less than one, do usage()
 if [ $# -ne 1 ]; then
@@ -30,6 +27,7 @@ then
     # ^ An intermediate output of this script; coordinates of LINE_SHP
     ELEV=1.2 # Metres above the ground that the observer stands
     # ^ just a guess (note, try include the vehicle, too)
+    OUTFILE="dist_los_car" # Name of final output raster
 elif [ $1 = "-train" ]
 then
     # We live in a post-shapefile world, baby!
@@ -38,16 +36,16 @@ then
     # ^ An intermediate output of this script; coordinates of LINE_SHP
     ELEV=2.5 # Metres above the ground that the observer stands
     # ^ just a guess (note, try include the vehicle, too)
+    OUTFILE="dist_los_rail" # Name of final output raster
 else
     usage; # shouldn't need this
 fi
 
 R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=250000 # Ideally the resolution of the DEM
-MAX_VIS_DIST=1000 # Maximum distance visible
+DIST_PTS=25 # Ideally the resolution of the DEM
+MAX_VIS_DIST=30000 # Maximum distance visible
 
-OUTFILE="dist_los_car" # Name of final output raster
 # Default north, south, etc. values, set with respect to the chosen projection
 mostNorth=0
 mostSouth=9999999
@@ -55,16 +53,22 @@ mostEast=0
 mostWest=9999999
 
 # Load shapefile into GRASS
-v.in.ogr dsn=$LINE_SHP output=road --o --v
+v.in.ogr dsn=$LINE_SHP output=line_feature --o --v
+
+#if [ $1 = "-train" ]
+#then
+#    # Extract only the North Island main trunk Wgtn-Akl
+#    v.extract input=line_feature output=line_feature type=line where="name_ascii = 'NORTH ISLAND MAIN TRUNK'" --v --o
+#fi
 
 # Load elevation raster into GRASS and set it as the computational region
 r.in.gdal --o input=$R_DEM output=dem --verbose
 
 # Sample points along line
-v.to.points -it in=road out=roads_points dmax=$DIST_PTS --o --q
+v.to.points -it in=line_feature out=line_feature_points dmax=$DIST_PTS --o --q
 
 # Put point coordinates in text file
-v.out.ascii in=roads_points separator=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
+v.out.ascii in=line_feature_points separator=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
 
 NPTS=`cat $PTS_FILE | wc -l`
 
@@ -163,21 +167,25 @@ done
 
 # Then combine the series 00-99 into the final LOS raster
 echo "\nFinal r.series: r.series -z input=g.list --q type=rast pattern=total_los_* sep=, out=total_los method=sum --o --q\n"
-r.series -z input=`g.list --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
+r.series -z input=`g.list --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --v
 
-# Create distance to road map
+# Create distance to line_feature raster
 echo "\nDetermining distance from features\n"
-v.to.rast in=road out=road use=val val=1 --o --q
-r.grow.distance -m input=road distance=dist_from_road --o --q
+v.to.rast in=line_feature out=line_feature use=val val=1 --o --v
+r.grow.distance -m input=line_feature distance=dist_from_line_feature --o --v
 
-# Use distance to road instead of viewing angle in the
+# Use distance to line_feature instead of viewing angle in the
 #   viewshed result map
 echo "\nSubstituting viewing angle for distance to features\n"
-g.remove $OUTFILE
-r.mapcalc "$OUTFILE = if(total_los, dist_from_road, null())"
+g.remove -f type=raster name=$OUTFILE --q
+r.mapcalc expression="$OUTFILE = if(total_los, dist_from_line_feature, null())" --o --v
+
+# Write output (as geotiff)
+r.out.gdal input=$OUTFILE output=../data/output/$OUTFILE.tif format=GTiff --o --v
 
 # Clean up, removing the component visibility rasters, only after outputs have been written
 echo "\nDeleting temporary files\n"
-g.mremove -f type=rast pattern="tmp_los_*" --q
+g.remove -f type=raster pattern="tmp_los_*" --q
+g.remove -f type=raster pattern="total_los_*" --q
 
 echo "\ngenerate_los.sh complete\n"

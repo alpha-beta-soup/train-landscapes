@@ -15,9 +15,10 @@ Secondly, obtain a line vector feature (a shapefile's good). Edit the variable `
 3. Type `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version, in the command line.
 4. Add an argument to this statement: either `-train` or `-road` depending on whether you want to run the intervisibility analysis for the road route, or the rail route.
 5. Execute your command, and wait (probably a very long time).
-6. Examine your result
-7. ????
-8. Profit
+6. Examine your result (enter `exit` to quit GRASS).
+7. Create tiles/tweak your slippy map.
+8. ????
+9. Profit.
 
 Note that for a very long and/or detailed line feature and/or a high-resolution DEM and/or a large `DIST_PTS` variable and/or a large `MAX_VIS_DIST` the procedure can take several hours to complete. You might like to test with non-default values first.
 
@@ -25,6 +26,8 @@ Requirements
 ------------
 
 `generate_los.sh` assumes [GRASS 6.4](http://grass.osgeo.org/). For GRASS 7.0 (currently not the stable release), use `generate_los_70.sh` or see original repo (by [@pierreroudier](https://github.com/pierreroudier)).
+
+I used QTiles, a QGIS plugin, to create tiles. There are other methods.
 
 Inspired by
 -----------
