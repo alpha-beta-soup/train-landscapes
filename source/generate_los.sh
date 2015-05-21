@@ -10,9 +10,6 @@ EOF
    exit 1
 }
 
-# References to "road" are made throughout, especially for intermediate output
-# I just haven't used a more general term :)
-
 # Number of arguments
 # If there is more or less than one, do usage()
 if [ $# -ne 1 ]; then
@@ -27,22 +24,27 @@ if [ $1 = "-road" ]
 then
     LINE_SHP='../data/road/roads.shp' # Roads shapefile
     PTS_FILE="../data/road/road_points_coords.csv"
-    # An intermediate output of this script; coordinates of LINE_SHP
+    # ^ An intermediate output of this script; coordinates of LINE_SHP
+    ELEV=1.2 # Metres above the ground that the observer stands
+    # ^ just a guess (note, try include the vehicle, too)
+    OUTFILE="dist_los_car" # Name of final output raster
 elif [ $1 = "-train" ]
 then
     # We live in a post-shapefile world, baby!
     LINE_SHP='../data/train/nz-railway-centrelines-topo-150k.gpkg' # Rail geopackage
     PTS_FILE="../data/train/rail_points_coords.csv"
-    # An intermediate output of this script; coordinates of LINE_SHP
+    # ^ An intermediate output of this script; coordinates of LINE_SHP
+    ELEV=2.5 # Metres above the ground that the observer stands
+    # ^ just a guess (note, try include the vehicle, too)
+    OUTFILE="dist_los_rail" # Name of final output raster
 else
     usage; # shouldn't need this
 fi
 
 R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=25 # Ideally the resolution of the DEM
-MAX_VIS_DIST=30000 # Maximum distance visible
-ELEV=1.2 # Metres above the ground that the observer stands (note, try include the vehicle, too)
+DIST_PTS=250000 # Ideally the resolution of the DEM
+MAX_VIS_DIST=500 # Maximum distance visible
 
 # r.los takes a long time, and the manual says to keep the number of rows and columns
 #   "under 1000". Here we adjust MAX_VIS_DIST by considering the resolution of
@@ -50,22 +52,22 @@ ELEV=1.2 # Metres above the ground that the observer stands (note, try include t
 POS_VIS_DIST=$(echo "$R_RES * 1000 / 2" | bc -l) # The maximum possible vis dist to use and still have 1000 rows and cols
 if [ 1 -eq `echo "$POS_VIS_DIST < $MAX_VIS_DIST" | bc` ]
 then
+  # If the maximum distance r.los can sustain exceeds the user-selected value, override it
+  echo "\nThe MAX_VIS_DIST parameter has been changed from $MAX_VIS_DIST to $POS_VIS_DIST for performance reasons.\n"
   MAX_VIS_DIST=$POS_VIS_DIST
-else
-  MAX_VIS_DIST=$MAX_VIS_DIST
 fi
 
 # Load shapefile into GRASS
-v.in.ogr dsn=$LINE_SHP output=road --o --v
+v.in.ogr dsn=$LINE_SHP output=line_feature --o --v
 
 # Load elevation raster into GRASS and set it as the computational region
 r.in.gdal --o input=$R_DEM output=dem --verbose
 
 # Sample points along line
-v.to.points -ivt in=road out=roads_points dmax=$DIST_PTS --o --q
+v.to.points -ivt in=line_feature out=line_feature_points dmax=$DIST_PTS --o --q
 
 # Put point coordinates in text file
-v.out.ascii -r in=roads_points fs=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
+v.out.ascii -r in=line_feature_points fs=, --quiet | awk -F "\"*,\"*" '{print $1","$2}' > $PTS_FILE
 
 NPTS=`cat $PTS_FILE | wc -l`
 
@@ -110,8 +112,7 @@ g.region -pm rast=dem --verbose
 echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
 #  rasters that can be open at once (1024)
-# r.series -z flag, new in grass70, "don't keep files open"
-for i in `seq 0 99`;
+for i in `seq 0 3`; # TODO 99
 do
   # Combine a subset of all the viewsheds
   # * is a wildcard for zero or more characters
@@ -130,18 +131,22 @@ done
 g.region -pm rast=dem --q
 r.series in=`g.mlist --q type=rast pattern=total_los_* sep=,` out=total_los method=sum --o --q
 
-# Create distance to road map
+# Create distance to line_feature map
 echo "\nDetermining distance from features\n"
-v.to.rast in=road out=road use=val val=1 --o --q
-r.grow.distance -m input=road distance=dist_from_road --o --q
+v.to.rast in=line_feature out=line_feature use=val val=1 --o --q
+r.grow.distance -m input=line_feature distance=dist_from_line_feature --o --q
 
-# Use distance to road instead of viewing angle in the
+# Use distance to line_feature instead of viewing angle in the
 #   viewshed result map
 echo "\nSubstituting viewing angle for distance from features\n"
-r.mapcalc "dist_los = if(total_los, dist_from_road, null())"
+r.mapcalc "$OUTFILE = if(total_los, dist_from_line_feature, null())"
 
-# Clean up, removing the component visibility rasters
+# Write output (as geotiff)
+r.out.gdal input=$OUTFILE output=../data/output/$OUTFILE.tif format=GTiff --o --v
+
+# Clean up, removing the component visibility rasters, only after outputs have been written
 echo "\nDeleting temporary files\n"
-g.mremove -f "tmp_los_*" --q
+g.mremove -f "tmp_los_*" --q #TODO
+g.mremove -f "total_los_*" --q
 
 echo "\ngenerate_los.sh complete\n"
