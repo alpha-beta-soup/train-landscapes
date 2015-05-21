@@ -162,6 +162,7 @@ do
     OUT=total_los_$i
   fi
   echo "\nComponent r.series: r.series -z input=g.list --q type=rast pattern=$PATT sep=, out=$OUT method=sum --o --q\n"
+  # r.series -z flag, new in grass70, "don't keep files open"
   r.series -z input=`g.list --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
 done
 
@@ -188,4 +189,4 @@ echo "\nDeleting temporary files\n"
 g.remove -f type=raster pattern="tmp_los_*" --q
 g.remove -f type=raster pattern="total_los_*" --q
 
-echo "\ngenerate_los.sh complete\n"
+echo "\ngenerate_los_70.sh complete\n"
