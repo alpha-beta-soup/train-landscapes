@@ -112,7 +112,7 @@ g.region -pm rast=dem --verbose
 echo "\nCombining component viewsheds\n"
 # Loops because otherwise can easily exceed default hard limit of number of
 #  rasters that can be open at once (1024)
-for i in `seq 0 3`; # TODO 99
+for i in `seq 0 99`;
 do
   # Combine a subset of all the viewsheds
   # * is a wildcard for zero or more characters
@@ -146,7 +146,7 @@ r.out.gdal input=$OUTFILE output=../data/output/$OUTFILE.tif format=GTiff --o --
 
 # Clean up, removing the component visibility rasters, only after outputs have been written
 echo "\nDeleting temporary files\n"
-g.mremove -f "tmp_los_*" --q #TODO
+g.mremove -f "tmp_los_*" --q
 g.mremove -f "total_los_*" --q
 
 echo "\ngenerate_los.sh complete\n"
