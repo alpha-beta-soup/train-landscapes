@@ -12,7 +12,7 @@ Secondly, obtain a line vector feature (a shapefile's good). Edit the variable `
 
 1. In a terminal: `$ grass64` or `$ grass70` as per what version of GRASS GIS you are using. (GRASS 7.0 will be faster for this task.)
 2. Set up and/or connect to the GRASS workspace where your project data is available and will be stored.
-3. Type `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version, in the command line.
+3. Type `$ sh generate_los.sh` *or* `$ sh generate_los_70.sh` according to your GRASS GIS version, in the command line. Note that while GRASS 6.4 is the current stable release, the viewshed functionality in GRASS 7 is improved in performance and in cabability. Indeed, the maximum visible distance is adjusted in the GRASS 6.4 script to reflect the fact that the documentation of `r.los` suggests a maximum of 1000 rows and columns in the input raster used for the visibility analysis (given its resolution). The GRASS 7 script does not require this (`r.viewshed`).
 4. Add an argument to this statement: either `-train` or `-road` depending on whether you want to run the intervisibility analysis for the road route, or the rail route.
 5. Execute your command, and wait (probably a very long time).
 6. Examine your result (enter `exit` to quit GRASS).
