@@ -2,7 +2,7 @@
 
 usage() {
    cat << EOF
-Usage: test.sh [-train | -road]
+Usage: generate_los.sh [-train | -road]
 
 -train    perform the viewshed analysis for the train journey
 -road     perform the viewshed analysis for the road journey
@@ -43,8 +43,8 @@ fi
 
 R_DEM='../data/hillshade/nidemreproj' # Elevation DEM
 R_RES=25 # The resolution of the DEM (metres)
-DIST_PTS=250000 # Ideally the resolution of the DEM
-MAX_VIS_DIST=500 # Maximum distance visible
+DIST_PTS=25 # Ideally the resolution of the DEM
+MAX_VIS_DIST=30000 # Maximum distance visible
 
 # r.los takes a long time, and the manual says to keep the number of rows and columns
 #   "under 1000". Here we adjust MAX_VIS_DIST by considering the resolution of

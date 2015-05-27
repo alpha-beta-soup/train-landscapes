@@ -2,7 +2,7 @@
 
 usage() {
    cat << EOF
-Usage: test.sh [-train | -road]
+Usage: generate_los_70.sh [-train | -road]
 
 -train    perform the viewshed analysis for the train journey
 -road     perform the viewshed analysis for the road journey

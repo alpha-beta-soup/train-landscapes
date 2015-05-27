@@ -1,5 +1,6 @@
 
 var carViewshed = '/data/tiles/car/Mapnik/{z}/{x}/{y}.png',
+    trainViewshed = '/data/tiles/rail/Mapnik/{z}/{x}/{y}.png',
     southWest = [-41.722,171.748],
     northEast = [-36.441,179.124],
     bounds = [southWest, northEast],
@@ -29,7 +30,7 @@ var car = L.tileLayer(carViewshed, {
   //transparent: true
 }).addTo(map); //default layer, so add to map
 
-var train = L.tileLayer(carViewshed, {
+var train = L.tileLayer(trainViewshed, {
   attribution: attribution,
   bounds: bounds,
   minZoom: global_min_zoom,
@@ -38,7 +39,7 @@ var train = L.tileLayer(carViewshed, {
   isBaseLayer: true,
   //opacity: 0.7,
   //transparent: true
-}); //TODO make train tiles, too //non-default layer, so don't add to map
+}); //non-default layer, so don't add to map
 
 var viewshedBasemaps = {
     "Car/bus view": car,
