@@ -2,6 +2,13 @@ html, body {
     height: 100%;
 }
 
+#title-text{
+  height: 8%;
+  width: 100%;
+  font-family: Helvetica;
+  text-align: center;
+}
+
 #map{
    height: 98%;
    width: 100%;
@@ -14,11 +21,11 @@ html, body {
 
 /* custom style for the layer control to make it a bit more obvious */
 
-.leaflet-control-layers-toggle:after{ 
-    content:"Toggle transport mode"; 
+.leaflet-control-layers-toggle:after{
+    content:"Toggle transport mode";
     color:#000 ;
 }
-.leaflet-control-layers-toggle{ 
+.leaflet-control-layers-toggle{
     width:auto;
     background-position:10px 50% ;
     padding:6px;
@@ -27,4 +34,3 @@ html, body {
     text-decoration:none;
     line-height:36px;
 }
-
