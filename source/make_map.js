@@ -1,6 +1,6 @@
 
-var carViewshed = 'train-landscapes.s3.amazonaws.com/car/{z}/{x}/{y}.png',
-    trainViewshed = 'train-landscapes.s3.amazonaws.com/rail/Mapnik/{z}/{x}/{y}.png',
+var carViewshed = 'https://s3-ap-southeast-2.amazonaws.com/train-landscapes/car/{z}/{x}/{y}.png',
+    trainViewshed = 'https://s3-ap-southeast-2.amazonaws.com/train-landscapes/rail/Mapnik/{z}/{x}/{y}.png',
     southWest = [-41.722,171.748],
     northEast = [-36.441,179.124],
     bounds = [southWest, northEast],

@@ -100,12 +100,12 @@ return_smaller() {
 COUNTER=0
 while read -r line
   do
-  
+
   PCT_FLOAT=$(echo "100*$((COUNTER+1))/$NPTS" | bc -l)
   PCT=`printf "%0.1f\n" $PCT_FLOAT`
 
-  echo -ne "Processing $NPTS viewshed instances: \t $PCT % ($((COUNTER+1))/$NPTS) \r" 
-  
+  echo -ne "Processing $NPTS viewshed instances: \t $PCT % ($((COUNTER+1))/$NPTS) \r"
+
   # Set the region to a smaller subset around the current observer point
   #   to speed processing
   x=$(echo $line | cut -f1 -d,)
@@ -115,7 +115,7 @@ while read -r line
   N=$(echo "$y+$MAX_VIS_DIST" | bc -l)
   S=$(echo "$y-$MAX_VIS_DIST" | bc -l)
   g.region n=$N s=$S e=$E w=$W --q
-  
+
   # Update mostNorth etc.
   # We collect the most extreme values for the extent so we can combine
   #   the component rasters later more efficiently (r.series will only be as big
@@ -124,16 +124,16 @@ while read -r line
   mostSouth=$(return_smaller $mostSouth $S)
   mostEast=$(return_larger $mostEast $E)
   mostWest=$(return_smaller $mostWest $W)
-  
+
   # Does not overwrite, so SIGINT (Ctrl+C) can be used to interrupt a
   #   long-running process, to be resumed later
   #   (keep parameters constant between runs)
   r.viewshed -crb input=dem output=tmp_los_${COUNTER} coordinates=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST memory=2000 --q
   COUNTER=$((COUNTER+1))
-  
+
 done < $PTS_FILE
 
-# Combine results in a single map 
+# Combine results in a single map
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
 # Set computational region to largest neccessary extent
@@ -163,7 +163,7 @@ do
   fi
   echo "\nComponent r.series: r.series -z input=g.list --q type=rast pattern=$PATT sep=, out=$OUT method=sum --o --q\n"
   # r.series -z flag, new in grass70, "don't keep files open"
-  r.series -z input=`g.list --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
+  r.series -z input=`g.list --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q
 done
 
 # Then combine the series 00-99 into the final LOS raster
@@ -175,10 +175,8 @@ echo "\nDetermining distance from features\n"
 v.to.rast in=line_feature out=line_feature use=val val=1 --o --v
 r.grow.distance -m input=line_feature distance=dist_from_line_feature --o --v
 
-# Use distance to line_feature instead of viewing angle in the
-#   viewshed result map
-echo "\nSubstituting viewing angle for distance to features\n"
-g.remove -f type=raster name=$OUTFILE --q
+# Use distance to line_feature instead of sum of times seen in the result map
+echo "\nSubstituting number of times seen for distance to cell from line\n"
 r.mapcalc expression="$OUTFILE = if(total_los, dist_from_line_feature, null())" --o --v
 
 # Write output (as geotiff)

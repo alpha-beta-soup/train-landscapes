@@ -79,12 +79,12 @@ echo -n "\nComputing viewsheds\n"
 COUNTER=0
 while read -r line
   do
-  
+
   PCT_FLOAT=$(echo "100*$((COUNTER+1))/$NPTS" | bc -l)
   PCT=`printf "%0.1f\n" $PCT_FLOAT`
 
-  echo -ne "Processing $NPTS viewshed instances: \t $PCT % ($COUNTER/$NPTS) \r" 
-  
+  echo -ne "Processing $NPTS viewshed instances: \t $PCT % ($COUNTER/$NPTS) \r"
+
   # Set the region to a smaller subset around the current observer point
   #   to speed processing
   x=$(echo $line | cut -f1 -d,)
@@ -94,19 +94,19 @@ while read -r line
   N=$(echo "$y+$MAX_VIS_DIST" | bc -l)
   S=$(echo "$y-$MAX_VIS_DIST" | bc -l)
   g.region n=$N s=$S e=$E w=$W
-  
+
   # Does not overwrite, so SIGINT (Ctrl+C) can be used to interrupt a
   #  long-running process, to be resumed later
   #  (keep parameters constant between runs)
   r.los input=dem output=tmp_los_${COUNTER} coordinate=$line obs_elev=$ELEV max_dist=$MAX_VIS_DIST --v
   COUNTER=$((COUNTER+1))
-  
+
 done < $PTS_FILE
 
 # Set computational region to full extent
 g.region -pm rast=dem --verbose
 
-# Combine results in a single map 
+# Combine results in a single map
 #   (aggregation method doesn't matter as we use
 #   this as a boolean mask)
 echo "\nCombining component viewsheds\n"
@@ -124,7 +124,7 @@ do
     PATT=tmp_los_*$i
     OUT=total_los_$i
   fi
-  r.series in=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q 
+  r.series in=`g.mlist --q type=rast pattern=$PATT sep=,` out=$OUT method=sum --o --q
 done
 
 # Then combine the series 00-99 into the final LOS raster
@@ -136,10 +136,9 @@ echo "\nDetermining distance from features\n"
 v.to.rast in=line_feature out=line_feature use=val val=1 --o --q
 r.grow.distance -m input=line_feature distance=dist_from_line_feature --o --q
 
-# Use distance to line_feature instead of viewing angle in the
-#   viewshed result map
-echo "\nSubstituting viewing angle for distance from features\n"
-r.mapcalc "$OUTFILE = if(total_los, dist_from_line_feature, null())"
+# Use distance to line_feature instead of sum of times seen in the result map
+echo "\nSubstituting number of times seen for distance to cell from line\n"
+r.mapcalc "$OUTFILE = if(total_los, dist_from_line_feature, null())"  --o --v
 
 # Write output (as geotiff)
 r.out.gdal input=$OUTFILE output=../data/output/$OUTFILE.tif format=GTiff --o --v
