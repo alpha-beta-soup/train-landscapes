@@ -1,6 +1,6 @@
 
-var carViewshed = '/data/tiles/car/Mapnik/{z}/{x}/{y}.png',
-    trainViewshed = '/data/tiles/rail/Mapnik/{z}/{x}/{y}.png',
+var carViewshed = 'train-landscapes.s3.amazonaws.com/car/{z}/{x}/{y}.png',
+    trainViewshed = 'train-landscapes.s3.amazonaws.com/rail/Mapnik/{z}/{x}/{y}.png',
     southWest = [-41.722,171.748],
     northEast = [-36.441,179.124],
     bounds = [southWest, northEast],
@@ -47,5 +47,3 @@ var viewshedBasemaps = {
 };
 
 L.control.layers(viewshedBasemaps).addTo(map); // Add the layer control to the map
-
-
